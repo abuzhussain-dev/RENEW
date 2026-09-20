@@ -16,7 +16,7 @@ if "DISPLAY" not in os.environ:
 
 from seleniumbase import SB
 
-# ================= 配置区域 =================
+# ================= Configuration Area =================
 PROXY = os.getenv("PROXY") or None
 TG_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID")
@@ -56,7 +56,7 @@ class BytenutRenewal:
         self.screenshot_dir = os.path.join(self.BASE_DIR, "artifacts")
         os.makedirs(self.screenshot_dir, exist_ok=True)
 
-    # ========== 脱敏工具 ==========
+    # ========== Masking Utilities ==========
     def mask_account(self, u):
         if not u:
             return "Unknown"
@@ -82,21 +82,21 @@ class BytenutRenewal:
         sb.save_screenshot(path)
         return path
 
-    # ========== TG 通知 ==========
+    # ========== Telegram Notifications ==========
     def send_tg(self, icon, title, account_name, server_id,
                 state_str, expiry_str, extra="", screenshot=None):
         if not TG_TOKEN or not TG_CHAT_ID:
             return
         msg = (
             f"{icon} {title}\n\n"
-            f"账号: {account_name}\n"
-            f"服务器: {server_id}\n"
-            f"状态: {state_str}\n"
-            f"到期时间: {expiry_str}\n"
+            f"Account: {account_name}\n"
+            f"Server: {server_id}\n"
+            f"Status: {state_str}\n"
+            f"Expiration: {expiry_str}\n"
         )
         if extra:
             msg += f"\n{extra}\n"
-        msg += "\nByteNut Auto Renew"
+        msg += "\nByteNut Auto Renewal"
         try:
             if screenshot and os.path.exists(screenshot):
                 url = f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto"
@@ -110,18 +110,18 @@ class BytenutRenewal:
                 url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
                 requests.post(url, data={"chat_id": TG_CHAT_ID, "text": msg})
         except Exception as e:
-            self.log(f"TG发送失败: {e}")
+            self.log(f"TG send failed: {e}")
 
-    # ========== 浏览器内 fetch（变量嵌入脚本）==========
+    # ========== Browser-side fetch (script injects variables) ==========
     def fetch_api(self, sb, url, method="GET", referer=None):
         """
-        在浏览器上下文执行 fetch，变量直接嵌入脚本字符串。
-        返回解析后的 data，失败返回 None。
+        Execute fetch in browser context, with variables directly embedded in the script.
+        Returns parsed data; if it fails, returns None.
         """
         if referer is None:
             referer = URL_HOMEPAGE
 
-        # 用 json.dumps 确保字符串正确转义
+        # Use json.dumps to ensure strings are escaped correctly
         import json
         url_js = json.dumps(url)
         method_js = json.dumps(method)
@@ -151,16 +151,16 @@ class BytenutRenewal:
                 resp = result["data"]
                 if resp.get("code") == 200:
                     return resp.get("data")
-                self.log(f"API 业务错误: {resp.get('message')}")
+                self.log(f"API business error: {resp.get('message')}")
             else:
                 err = result.get("error") if result else "None"
-                self.log(f"fetch 失败: {err}")
+                self.log(f"fetch failed: {err}")
         except Exception as e:
-            self.log(f"fetch_api 异常: {e}")
+            self.log(f"fetch_api exception: {e}")
         return None
 
     def fetch_api_post(self, sb, url, referer=None):
-        """POST 版本"""
+        """POST version"""
         if referer is None:
             referer = URL_HOMEPAGE
 
@@ -193,15 +193,15 @@ class BytenutRenewal:
                 resp = result["data"]
                 if resp.get("code") == 200:
                     return resp.get("data")
-                self.log(f"API 业务错误: {resp.get('message')}")
+                self.log(f"API business error: {resp.get('message')}")
             else:
                 err = result.get("error") if result else "None"
-                self.log(f"fetch POST 失败: {err}")
+                self.log(f"fetch POST failed: {err}")
         except Exception as e:
-            self.log(f"fetch_api_post 异常: {e}")
+            self.log(f"fetch_api_post exception: {e}")
         return None
 
-    # ========== API 封装 ==========
+    # ========== API Wrappers ==========
     def get_servers_data(self, sb):
         return self.fetch_api(sb, API_SERVER_LIST, referer=URL_HOMEPAGE)
 
@@ -215,28 +215,28 @@ class BytenutRenewal:
         return self.fetch_api(sb, API_START_STATUS.format(server_id),
                               referer=ref)
 
-    # ========== 等待页面就绪 ==========
+    # ========== Wait for Page Ready ==========
     def wait_for_panel_ready(self, sb, server_id, timeout=30):
-        self.log("⏳ 等待页面加载...")
+        self.log("⏳ Waiting for page to load...")
         try:
             sb.wait_for_element_present(PAGE_READY_INDICATOR, timeout=timeout)
         except Exception:
-            self.log("⚠️ 侧边栏未出现，继续...")
+            self.log("⚠️ Sidebar not visible, continuing...")
 
         deadline = time.time() + timeout
         while time.time() < deadline:
             try:
                 if sb.is_element_present(RENEW_MENU):
-                    self.log("✅ 页面就绪（RENEW SERVER 可见）")
+                    self.log("✅ Page ready (RENEW SERVER visible)")
                     return True
             except Exception:
                 pass
             self.remove_overlay_ads(sb)
             time.sleep(1)
-        self.log("⚠️ RENEW SERVER 等待超时")
+        self.log("⚠️ Timed out waiting for RENEW SERVER")
         return False
 
-    # ========== 轮询开机队列 ==========
+    # ========== Poll Startup Queue ==========
     def poll_start_status(self, sb, server_id, timeout=300, interval=5):
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -247,10 +247,10 @@ class BytenutRenewal:
                 pos = data.get("queuePosition", 0)
                 wait_sec = data.get("estimatedWaitSeconds")
                 msg = data.get("statusMessage", "")
-                self.log(f"  队列: inQueue={in_queue}, pos={pos}, "
+                self.log(f"  Queue: inQueue={in_queue}, pos={pos}, "
                          f"wait={wait_sec}s, msg={msg}")
                 if not in_queue and can_start:
-                    self.log("✅ 服务器启动成功（队列完成）")
+                    self.log("✅ Server started successfully (queue completed)")
                     return True, "running"
             time.sleep(interval)
         return False, "timeout"
@@ -279,7 +279,7 @@ class BytenutRenewal:
             time.sleep(interval)
         return False
 
-    # ========== 广告清理 ==========
+    # ========== Ad Cleanup ==========
     def remove_overlay_ads(self, sb):
         try:
             sb.execute_script("""
@@ -314,7 +314,7 @@ class BytenutRenewal:
             """)
         except Exception:
             pass
-    
+
     # ========== Turnstile ==========
     def is_turnstile_present(self, sb):
         try:
@@ -330,9 +330,9 @@ class BytenutRenewal:
 
     def wait_turnstile(self, sb, timeout=90):
         if not self.is_turnstile_present(sb):
-            self.log("ℹ️ 无 Turnstile 验证")
+            self.log("ℹ️ No Turnstile verification")
             return True
-        self.log("⏳ 等待 Turnstile 验证...")
+        self.log("⏳ Waiting for Turnstile verification...")
         start = time.time()
         last_click = 0
         while time.time() - start < timeout:
@@ -350,7 +350,7 @@ class BytenutRenewal:
                     "\"input[name='cf-turnstile-response']\")?.value || '';"
                 )
                 if len(val) > 20:
-                    self.log("✅ Turnstile 完成")
+                    self.log("✅ Turnstile completed")
                     return True
             except Exception:
                 pass
@@ -366,18 +366,18 @@ class BytenutRenewal:
                     except Exception:
                         pass
             time.sleep(1)
-        self.log("⚠️ Turnstile 超时")
+        self.log("⚠️ Turnstile timed out")
         return False
 
     def _wait_dialog_turnstile(self, sb, timeout=30):
-        self.log("⏳ 等待弹窗 Turnstile（最多 30s）...")
+        self.log("⏳ Waiting for pop-up Turnstile (up to 30s)...")
         start = time.time()
         last_click = 0
         while time.time() - start < timeout:
             self.remove_overlay_ads(sb)
             if sb.execute_script(
                     "return !document.querySelector('div.el-dialog');"):
-                self.log("✅ 弹窗已消失，验证自动完成")
+                self.log("✅ Dialog disappeared, verification completed automatically")
                 return True
             if sb.execute_script("""
                 var btn = document.querySelector(
@@ -385,7 +385,7 @@ class BytenutRenewal:
                 return btn && !btn.disabled
                     && !btn.classList.contains('is-disabled');
             """):
-                self.log("✅ Continue 已启用，Turnstile 自动完成")
+                self.log("✅ Continue is enabled, Turnstile completed automatically")
                 return True
             try:
                 val = sb.execute_script("""
@@ -396,7 +396,7 @@ class BytenutRenewal:
                     return i ? i.value : '';
                 """)
                 if val and len(val) > 20:
-                    self.log("✅ 弹窗 Turnstile token 已填充")
+                    self.log("✅ Pop-up Turnstile token filled")
                     return True
             except Exception:
                 pass
@@ -419,10 +419,10 @@ class BytenutRenewal:
                         pass
             time.sleep(1)
 
-        # 超时后最终检查
+        # Final check after timeout
         if sb.execute_script(
                 "return !document.querySelector('div.el-dialog');"):
-            self.log("✅ 超时后弹窗已消失")
+            self.log("✅ Dialog disappeared after timeout")
             return True
         if sb.execute_script("""
             var btn = document.querySelector(
@@ -430,12 +430,12 @@ class BytenutRenewal:
             return btn && !btn.disabled
                 && !btn.classList.contains('is-disabled');
         """):
-            self.log("✅ 超时后 Continue 已启用")
+            self.log("✅ Continue enabled after timeout")
             return True
-        self.log("⚠️ Turnstile 等待结束，尝试继续")
+        self.log("⚠️ Turnstile wait ended, continuing anyway")
         return True
 
-    # ========== 广告验证弹窗 ==========
+    # ========== Ad Verification Dialog ==========
     def handle_ad_verification(self, sb):
         try:
             if not sb.execute_script(
@@ -443,7 +443,7 @@ class BytenutRenewal:
                 "'div.adsterra-rewarded-dialog');"
             ):
                 return True
-            self.log("🛡️ 处理广告验证...")
+            self.log("🛡️ Handling ad verification...")
             time.sleep(1)
             sb.execute_script("""
                 var btn = document.querySelector(
@@ -467,13 +467,13 @@ class BytenutRenewal:
                 if (btn) btn.click();
             """)
             time.sleep(3)
-            self.log("✅ 广告验证完成")
+            self.log("✅ Ad verification completed")
             return True
         except Exception as e:
-            self.log(f"广告验证异常: {e}")
+            self.log(f"Ad verification exception: {e}")
             return True
 
-    # ========== 导航 + 等待就绪 ==========
+    # ========== Navigation + Wait for Readiness ==========
     def navigate_to_panel(self, sb, server_id):
         url = f"https://www.bytenut.com/free-gamepanel/{server_id}"
         sb.uc_open_with_reconnect(url, reconnect_time=6)
@@ -481,7 +481,7 @@ class BytenutRenewal:
         self.remove_overlay_ads(sb)
         return self.wait_for_panel_ready(sb, server_id, timeout=30)
 
-    # ========== 点击 RENEW SERVER（带重试）==========
+    # ========== Click RENEW SERVER (with retry) ==========
     def click_renew_menu(self, sb, server_id, idx, max_retry=3):
         for attempt in range(1, max_retry + 1):
             try:
@@ -490,32 +490,32 @@ class BytenutRenewal:
                 self.remove_overlay_ads(sb)
                 sb.click(RENEW_MENU)
                 time.sleep(3)
-                self.log(f"✅ RENEW SERVER 已点击 (attempt {attempt})")
+                self.log(f"✅ RENEW SERVER clicked (attempt {attempt})")
                 return True
             except Exception as e:
-                self.log(f"⚠️ RENEW SERVER 失败 (attempt {attempt}): {e}")
+                self.log(f"⚠️ RENEW SERVER failed (attempt {attempt}): {e}")
                 if attempt < max_retry:
                     self.shot(sb, f"renew_fail_{idx}_a{attempt}.png")
-                    self.log("🔄 重新导航...")
+                    self.log("🔄 Navigating again...")
                     self.navigate_to_panel(sb, server_id)
-        self.log("❌ RENEW SERVER 最终失败")
+        self.log("❌ RENEW SERVER failed permanently")
         return False
 
-    # ========== 续期 ==========
+    # ========== Renewal ==========
     def try_extend_and_verify(self, sb, server_id, old_expiry):
         if not self.wait_turnstile(sb):
             return False, ""
         self.remove_overlay_ads(sb)
-        self.log("⏳ 点击续期按钮...")
+        self.log("⏳ Clicking extension button...")
         try:
             if sb.is_element_visible(EXTEND_BTN):
                 sb.execute_script("arguments[0].click();",
                                   sb.find_element(EXTEND_BTN))
             else:
-                self.log("⚠️ 续期按钮不可见")
+                self.log("⚠️ Extension button not visible")
                 return False, ""
         except Exception as e:
-            self.log(f"续期按钮点击失败: {e}")
+            self.log(f"Extension button click failed: {e}")
             return False, ""
 
         time.sleep(2)
@@ -527,7 +527,7 @@ class BytenutRenewal:
             if new_ext:
                 new_expiry = new_ext.get("expiredTime", "")
                 if new_expiry and new_expiry != old_expiry:
-                    self.log(f"✅ 续期生效: {self.format_expiry(new_expiry)}")
+                    self.log(f"✅ Renewal took effect: {self.format_expiry(new_expiry)}")
                     return True, self.format_expiry(new_expiry)
             time.sleep(5)
 
@@ -536,13 +536,13 @@ class BytenutRenewal:
             return "cooldown", ""
         return False, ""
 
-    # ========== UI 开机 ==========
+    # ========== UI Startup ==========
     def ui_start_server(self, sb, server_id, idx):
-        self.log("🖥️ 导航到 Console 页面...")
+        self.log("🖥️ Navigating to Console page...")
         self.navigate_to_panel(sb, server_id)
 
-        # Step 1: 展开 Management
-        self.log("📂 展开 Management...")
+        # Step 1: Expand Management
+        self.log("📂 Expanding Management...")
         try:
             sb.click(MANAGEMENT_MENU)
             time.sleep(2)
@@ -557,11 +557,11 @@ class BytenutRenewal:
                 """)
                 time.sleep(2)
             except Exception as e:
-                self.log(f"Management 展开失败: {e}")
+                self.log(f"Management expansion failed: {e}")
                 return False, "management_fail"
 
-        # Step 2: 点击 Console
-        self.log("🖥️ 点击 Console...")
+        # Step 2: Click Console
+        self.log("🖥️ Clicking Console...")
         try:
             sb.click(CONSOLE_MENU_ITEM)
             time.sleep(3)
@@ -576,19 +576,19 @@ class BytenutRenewal:
                 """)
                 time.sleep(3)
             except Exception as e:
-                self.log(f"Console 点击失败: {e}")
+                self.log(f"Console click failed: {e}")
 
-        # Step 3: 等待 Start 按钮
+        # Step 3: Wait for Start button
         try:
             sb.wait_for_element_present(START_BTN, timeout=15)
-            self.log("✅ Console 页面就绪")
+            self.log("✅ Console page ready")
         except Exception as e:
-            self.log(f"⚠️ 等待 Start 超时: {e}")
+            self.log(f"⚠️ Timed out waiting for Start: {e}")
             self.shot(sb, f"no_start_btn_{idx}.png")
             return False, "no_start_btn"
 
-        # Step 4: 点击 Start
-        self.log("▶️ 点击 Start...")
+        # Step 4: Click Start
+        self.log("▶️ Clicking Start...")
         self.remove_overlay_ads(sb)
         try:
             btn = sb.find_element(START_BTN)
@@ -599,14 +599,14 @@ class BytenutRenewal:
                 "arguments[0].scrollIntoView({block:'center'});", btn)
             time.sleep(0.5)
             sb.execute_script("arguments[0].click();", btn)
-            self.log("  Start 已点击")
+            self.log("  Start clicked")
             time.sleep(2)
         except Exception as e:
-            self.log(f"Start 点击失败: {e}")
+            self.log(f"Start click failed: {e}")
             return False, "start_click_fail"
 
-        # Step 5: 等待验证弹窗（最多 10s）
-        self.log("⏳ 等待验证弹窗...")
+        # Step 5: Wait for verification dialog (up to 10s)
+        self.log("⏳ Waiting for verification dialog...")
         dialog_appeared = False
         for _ in range(10):
             try:
@@ -617,27 +617,27 @@ class BytenutRenewal:
                 pass
             data = self.get_start_status(sb, server_id)
             if data and not data.get("inQueue") and data.get("canStart"):
-                self.log("✅ 无弹窗，直接开机成功")
+                self.log("✅ No dialog, server started directly")
                 return True, "running"
             time.sleep(1)
 
         if not dialog_appeared:
-            self.log("⚠️ 弹窗未出现，轮询状态...")
+            self.log("⚠️ Dialog did not appear, polling status...")
             ok, state = self.poll_start_status(sb, server_id, timeout=60)
             return (True, state) if ok else (False, "dialog_not_appeared")
 
-        self.log("✅ 验证弹窗出现")
+        self.log("✅ Verification dialog appeared")
 
-        # Step 6: 等待 Turnstile
+        # Step 6: Wait for Turnstile
         self._wait_dialog_turnstile(sb, timeout=30)
 
-        # Step 7: 点击 Continue（最多 60s）
-        self.log("▶️ 等待并点击 Continue...")
+        # Step 7: Click Continue (up to 60s)
+        self.log("▶️ Waiting for and clicking Continue...")
         continue_clicked = False
         for attempt in range(30):
             if sb.execute_script(
                     "return !document.querySelector('div.el-dialog');"):
-                self.log("✅ 弹窗已自动消失")
+                self.log("✅ Dialog disappeared automatically")
                 continue_clicked = True
                 break
             if sb.execute_script("""
@@ -651,29 +651,29 @@ class BytenutRenewal:
                         'div.el-dialog__footer button.el-button--primary'
                     ).click();
                 """)
-                self.log(f"  Continue 已点击 (attempt {attempt + 1})")
+                self.log(f"  Continue clicked (attempt {attempt + 1})")
                 continue_clicked = True
                 break
             if attempt % 5 == 0:
-                self.log(f"  等待 Continue 启用... ({attempt + 1}/30)")
+                self.log(f"  Waiting for Continue to enable... ({attempt + 1}/30)")
             time.sleep(2)
 
         if not continue_clicked:
-            self.log("❌ Continue 未启用")
+            self.log("❌ Continue not enabled")
             self.shot(sb, f"continue_fail_{idx}.png")
             return False, "continue_fail"
 
         time.sleep(3)
 
-        # Step 8: 处理排队弹窗
+        # Step 8: Handle queue dialog
         self._handle_queue_dialog(sb)
 
-        # Step 9: 轮询开机状态
-        self.log("⏳ 轮询开机状态...")
+        # Step 9: Poll startup status
+        self.log("⏳ Polling startup status...")
         ok, state = self.poll_start_status(
             sb, server_id, timeout=300, interval=5)
         if ok:
-            self.log("⏳ 确认运行状态...")
+            self.log("⏳ Confirming runtime status...")
             is_running, final_state = self.wait_until_running(
                 sb, server_id, timeout=120, interval=10)
             return True, "running" if is_running else f"started({final_state})"
@@ -691,7 +691,7 @@ class BytenutRenewal:
                     break
                 time.sleep(1)
             if has_q:
-                self.log("📋 排队弹窗，点击 OK...")
+                self.log("📋 Queue dialog, clicking OK...")
                 sb.execute_script("""
                     document.querySelectorAll(
                         'div.el-message-box.queue-dialog-styled '
@@ -701,11 +701,11 @@ class BytenutRenewal:
                     });
                 """)
                 time.sleep(2)
-                self.log("✅ 排队弹窗已关闭")
+                self.log("✅ Queue dialog closed")
             else:
-                self.log("ℹ️ 无排队弹窗")
+                self.log("ℹ️ No queue dialog")
         except Exception as e:
-            self.log(f"排队弹窗异常: {e}")
+            self.log(f"Queue dialog exception: {e}")
 
     def format_expiry(self, dt_str):
         if not dt_str:
@@ -718,17 +718,17 @@ class BytenutRenewal:
                 continue
         return dt_str
 
-    # ========== 主流程 ==========
+    # ========== Main Flow ==========
     def run(self):
-        self.log("🚀 开始执行 ByteNut 续期与开机")
+        self.log("🚀 Starting ByteNut renewal and startup")
         accounts = parse_accounts(ACCOUNTS)
         if not accounts:
-            self.log("❌ 无账号")
+            self.log("❌ No account")
             return
 
         for idx, (user, pwd) in enumerate(accounts, 1):
             masked_user = self.mask_account(user)
-            self.log(f"==== 账号 [{idx}] {masked_user} ====")
+            self.log(f"==== Account [{idx}] {masked_user} ====")
 
             with SB(
                 uc=True, test=True, headed=True,
@@ -739,7 +739,7 @@ class BytenutRenewal:
                 proxy=PROXY,
             ) as sb:
                 try:
-                    # --- 登录 ---
+                    # --- Login ---
                     sb.uc_open_with_reconnect(URL_LOGIN_PANEL, reconnect_time=5)
                     sb.wait_for_element_visible(
                         'input[placeholder="Username"]', timeout=25)
@@ -748,22 +748,22 @@ class BytenutRenewal:
                     sb.click('//button[contains(., "Sign In")]')
                     time.sleep(5)
                     if "/auth/login" in sb.get_current_url():
-                        self.send_tg("❌", "登录失败", user, "未知",
-                                     "未知", "",
+                        self.send_tg("❌", "Login failed", user, "Unknown",
+                                     "Unknown", "",
                                      screenshot=self.shot(
                                          sb, f"login_fail_{idx}.png"))
                         continue
-                    self.log("✅ 登录成功")
+                    self.log("✅ Login successful")
 
-                    # 停留 homepage 让 CF cookie 稳定
+                    # Stay on homepage to stabilize Cloudflare cookies
                     sb.uc_open_with_reconnect(URL_HOMEPAGE, reconnect_time=6)
                     time.sleep(8)
 
-                    # --- 获取服务器信息 ---
+                    # --- Get server information ---
                     servers = self.get_servers_data(sb)
                     if not servers:
-                        self.send_tg("⚠️", "警告", user, "未知",
-                                     "未知", "API 请求失败",
+                        self.send_tg("⚠️", "Warning", user, "Unknown",
+                                     "Unknown", "API request failed",
                                      screenshot=self.shot(
                                          sb, f"no_server_{idx}.png"))
                         continue
@@ -775,20 +775,20 @@ class BytenutRenewal:
                     expired_time = server.get("expiredTime") or ""
                     expiry_str = self.format_expiry(expired_time)
                     log_sid = self.mask_server_id(server_id)
-                    self.log(f"服务器 {log_sid}: 状态={state}, 到期={expiry_str}")
+                    self.log(f"Server {log_sid}: status={state}, expiration={expiry_str}")
 
                     if not server_id:
-                        self.send_tg("❌", "失败", user, "未知",
-                                     state, expiry_str, "服务器ID无效",
+                        self.send_tg("❌", "Failed", user, "Unknown",
+                                     state, expiry_str, "Server ID is invalid",
                                      screenshot=self.shot(
                                          sb, f"invalid_id_{idx}.png"))
                         continue
 
                     ext_info = self.get_extension_data(sb, server_id)
                     if not ext_info:
-                        self.send_tg("❌", "失败", user, server_id,
+                        self.send_tg("❌", "Failed", user, server_id,
                                      state, expiry_str,
-                                     extra="无法获取扩展信息",
+                                     extra="Unable to get extension information",
                                      screenshot=self.shot(
                                          sb, f"ext_info_fail_{idx}.png"))
                         continue
@@ -797,22 +797,22 @@ class BytenutRenewal:
                     cooldown_min = ext_info.get("minutesUntilNextExtension", 0)
                     mins_until_exp = ext_info.get("minutesUntilExpiration", 9999)
                     expired = mins_until_exp <= 0
-                    self.log(f"可续期={can_extend}, 冷却={cooldown_min}分, "
-                             f"距过期={mins_until_exp}分")
+                    self.log(f"Can extend={can_extend}, cooldown={cooldown_min} min, "
+                             f"time until expiration={mins_until_exp} min")
 
-                    # ===== 离线处理 =====
+                    # ===== Offline handling =====
                     if state == "offline":
                         if can_extend:
-                            self.log("🔴 离线可续期，先续期再开机...")
+                            self.log("🔴 Offline and extendable, renew first then start...")
                             ready = self.navigate_to_panel(sb, server_id)
                             if not ready:
-                                self.send_tg("❌", "面板加载失败", user,
+                                self.send_tg("❌", "Panel load failed", user,
                                              server_id, "offline", expiry_str,
                                              screenshot=self.shot(
                                                  sb, f"panel_fail_{idx}.png"))
                                 continue
                             if not self.click_renew_menu(sb, server_id, idx):
-                                self.send_tg("❌", "续期菜单失败", user,
+                                self.send_tg("❌", "Renew menu failed", user,
                                              server_id, "offline", expiry_str,
                                              screenshot=self.shot(
                                                  sb, f"renew_fail_{idx}.png"))
@@ -823,9 +823,9 @@ class BytenutRenewal:
                                 if not self.wait_until_not_expired(
                                         sb, server_id):
                                     self.send_tg(
-                                        "⚠️", "续期成功但状态未更新",
+                                        "⚠️", "Renewal successful but status not updated",
                                         user, server_id, "offline", expiry_str,
-                                        "无法开机，请稍后重试",
+                                        "Unable to start, please try again later",
                                         screenshot=self.shot(
                                             sb, f"start_fail_{idx}.png"))
                                     continue
@@ -833,36 +833,36 @@ class BytenutRenewal:
                                     sb, server_id, idx)
                                 self.send_tg(
                                     "✅" if ok else "⚠️",
-                                    "续期并开机成功" if ok else "续期成功，开机未确认",
+                                    "Renewal and startup successful" if ok else "Renewal successful, startup unconfirmed",
                                     user, server_id,
                                     f"offline -> {final}",
                                     f"{expiry_str} -> {new_time}",
                                     screenshot=self.shot(sb, f"ok_{idx}.png"))
                             elif result == "cooldown":
-                                self.send_tg("⏳", "续期后冷却", user,
+                                self.send_tg("⏳", "Cooling down after renewal", user,
                                              server_id, "offline", expiry_str,
                                              screenshot=self.shot(
                                                  sb, f"cooldown_{idx}.png"))
                             else:
-                                self.send_tg("❌", "续期失败", user,
+                                self.send_tg("❌", "Renewal failed", user,
                                              server_id, "offline", expiry_str,
                                              screenshot=self.shot(
                                                  sb, f"extend_fail_{idx}.png"))
                         else:
                             if expired:
                                 self.send_tg(
-                                    "🚫", "无法操作", user, server_id,
+                                    "🚫", "Action unavailable", user, server_id,
                                     state, expiry_str,
-                                    "服务器已过期且处于冷却期",
+                                    "Server expired and is in cooldown",
                                     screenshot=self.shot(
                                         sb, f"expired_cooldown_{idx}.png"))
                             else:
-                                self.log("🔴 离线冷却中，直接开机（UI）")
+                                self.log("🔴 Offline and in cooldown, start directly via UI")
                                 ok, final = self.ui_start_server(
                                     sb, server_id, idx)
                                 self.send_tg(
                                     "✅" if ok else "❌",
-                                    "开机成功" if ok else "开机失败",
+                                    "Startup successful" if ok else "Startup failed",
                                     user, server_id,
                                     f"offline -> {final}", expiry_str,
                                     screenshot=self.shot(
@@ -871,26 +871,26 @@ class BytenutRenewal:
                                         f"_{idx}.png"))
                         continue
 
-                    # ===== 运行中处理 =====
+                    # ===== Running state handling =====
                     if not can_extend:
-                        extra = "服务器已过期但处于冷却期" if expired else ""
-                        self.log(f"⏳ 冷却中 ({cooldown_min}分钟)")
-                        self.send_tg("⏳", "冷却中", user, server_id,
+                        extra = "Server expired but is in cooldown" if expired else ""
+                        self.log(f"⏳ In cooldown ({cooldown_min} minutes)")
+                        self.send_tg("⏳", "In cooldown", user, server_id,
                                      state, expiry_str, extra,
                                      screenshot=self.shot(
                                          sb, f"cooldown_{idx}.png"))
                         continue
 
-                    self.log("✅ 可续期，执行续期")
+                    self.log("✅ Extendable, performing renewal")
                     ready = self.navigate_to_panel(sb, server_id)
                     if not ready:
-                        self.send_tg("❌", "面板加载失败", user, server_id,
+                        self.send_tg("❌", "Panel load failed", user, server_id,
                                      state, expiry_str,
                                      screenshot=self.shot(
                                          sb, f"panel_fail_{idx}.png"))
                         continue
                     if not self.click_renew_menu(sb, server_id, idx):
-                        self.send_tg("❌", "续期菜单失败", user, server_id,
+                        self.send_tg("❌", "Renew menu failed", user, server_id,
                                      state, expiry_str,
                                      screenshot=self.shot(
                                          sb, f"renew_fail_{idx}.png"))
@@ -898,32 +898,32 @@ class BytenutRenewal:
                     result, new_time = self.try_extend_and_verify(
                         sb, server_id, expired_time)
                     if result is True:
-                        self.send_tg("✅", "续期成功", user, server_id,
+                        self.send_tg("✅", "Renewal successful", user, server_id,
                                      state, f"{expiry_str} -> {new_time}",
                                      screenshot=self.shot(sb, f"ok_{idx}.png"))
                     elif result == "cooldown":
-                        self.send_tg("⏳", "续期后冷却", user, server_id,
+                        self.send_tg("⏳", "Cooling down after renewal", user, server_id,
                                      state, expiry_str,
                                      screenshot=self.shot(
                                          sb, f"cooldown_{idx}.png"))
                     else:
-                        self.send_tg("❌", "续期失败", user, server_id,
+                        self.send_tg("❌", "Renewal failed", user, server_id,
                                      state, expiry_str,
                                      screenshot=self.shot(
                                          sb, f"extend_fail_{idx}.png"))
 
                 except Exception as e:
-                    self.log(f"❌ 异常: {e}")
+                    self.log(f"❌ Exception: {e}")
                     try:
-                        self.send_tg("❌", "异常", user, "未知",
-                                     "未知", str(e),
+                        self.send_tg("❌", "Exception", user, "Unknown",
+                                     "Unknown", str(e),
                                      screenshot=self.shot(
                                          sb, f"error_{idx}.png"))
                     except Exception:
-                        self.send_tg("❌", "异常", user, "未知",
-                                     "未知", str(e))
+                        self.send_tg("❌", "Exception", user, "Unknown",
+                                     "Unknown", str(e))
 
-        self.log("✅ 所有账号处理完毕")
+        self.log("✅ All accounts processed")
 
 
 if __name__ == "__main__":
