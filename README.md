@@ -1,178 +1,177 @@
-# ByteNut 自动续期脚本
+# ByteNut Auto-Renewal Script
 
-# ⭐ **觉得有用？给个 Star 支持一下！**
-> 注册地址：[https://www.bytenut.com/](https://www.bytenut.com/auth/login)
+# ⭐ **Found it useful? Give it a Star!**
+> Registration link: [https://www.bytenut.com/](https://www.bytenut.com/auth/login)
 
-自动检查并续期 ByteNut 免费游戏服务器的 GitHub Actions 脚本。支持多账号、多种代理协议、离线自动开机和 Telegram 通知等功能。
+A GitHub Actions script that automatically checks and renews ByteNut free game servers. Supports multiple accounts, multiple proxy protocols, automatic power-on when offline, and Telegram notifications.
 
-## ✨ 功能特性
+## ✨ Features
 
-- ✅ 多账号支持
-- ✅ 自动登录（处理 Cloudflare Turnstile 验证）
-- ✅ 智能检测服务器状态（过期自动续期，离线自动开机）
-- ✅ 支持多种代理协议（VLESS / VMess / Trojan / Shadowsocks / SOCKS5）
-- ✅ Telegram 通知（带截图）
-- ✅ 自动处理续期冷却与过期保护
-- ✅ 保留最近 2 条运行记录，仓库清爽不膨胀
+- ✅ Multi-account support
+- ✅ Automatic login (handles Cloudflare Turnstile verification)
+- ✅ Smart server status checks (auto-renew on expiration, auto-power-on when offline)
+- ✅ Supports multiple proxy protocols (VLESS / VMess / Trojan / Shadowsocks / SOCKS5)
+- ✅ Telegram notifications (with screenshots)
+- ✅ Automatic handling of renewal cooldown and expiration protection
+- ✅ Keeps the latest 2 run records to avoid repository bloat
 
+## 📋 Prerequisites
 
-## 📋 前置要求
+### 1. GitHub Secrets Configuration
 
-### 1. GitHub Secrets 配置
+Go to your repository `Settings` → `Secrets and variables` → `Actions`, and add the following Secrets:
 
-进入仓库 `Settings` → `Secrets and variables` → `Actions`，添加以下 Secrets：
-
-| Secret 名称 | 必填 | 说明 | 示例 |
-|------------|------|------|------|
-| `BYTENUT` | ✅ | ByteNut 账号信息 | 见下方格式 |
+| Secret Name | Required | Description | Example |
+|------------|----------|-------------|---------|
+| `BYTENUT` | ✅ | ByteNut account information | See format below |
 | `TG_BOT_TOKEN` | ❌ | Telegram Bot Token | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
 | `TG_CHAT_ID` | ❌ | Telegram Chat ID | `123456789` |
-| `PROXY_NODE` | ❌ | 代理节点链接 | `vless://uuid@server:port?type=ws&security=tls&sni=example.com` |
+| `PROXY_NODE` | ❌ | Proxy node URL | `vless://uuid@server:port?type=ws&security=tls&sni=example.com` |
 
-### 2. BYTENUT 格式
+### 2. BYTENUT Format
 
-每行一个账号，格式：`用户名-----密码`（中间是五个减号）
+One account per line, in the format: `username-----password` (five dashes in the middle)
 
-```
+```text
 user1-----MyP@ssw0rd
 user2-----AnotherP@ss
 ```
 
-### 3. PROXY_NODE 格式（可选）
+### 3. PROXY_NODE Format (Optional)
 
-支持直连或以下代理协议：
+Supports direct connection or the following proxy protocols:
 
-| 协议 | 示例 |
-|------|------|
+| Protocol | Example |
+|----------|---------|
 | VLESS | `vless://uuid@host:port?type=ws&security=tls&sni=example.com` |
 | VMess | `vmess://eyJhZGQiOiIxLjIuMy40IiwidiI6IjIiLCJwc...` |
 | Trojan | `trojan://password@host:port?type=ws&sni=example.com` |
 | Shadowsocks | `ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ=@host:port` |
-| SOCKS5 | `socks5://user:pass@host:port` 或 `socks5://host:port` |
+| SOCKS5 | `socks5://user:pass@host:port` or `socks5://host:port` |
 
-> 留空则使用直连。VLESS Reality / gRPC / WebSocket 等高级特性均已支持。
+> Leave it empty to use direct connection. Advanced features such as VLESS Reality / gRPC / WebSocket are supported.
 
-### 4. Telegram 通知配置（可选）
+### 4. Telegram Notification Setup (Optional)
 
-1. 创建 Bot：向 [@BotFather](https://t.me/BotFather) 发送 `/newbot`
-2. 获取 Chat ID：向 [@userinfobot](https://t.me/userinfobot) 发送任意消息
-3. 将 Bot Token 和 Chat ID 添加到 Secrets
+1. Create a bot: send `/newbot` to [@BotFather](https://t.me/BotFather)
+2. Get your Chat ID: send any message to [@userinfobot](https://t.me/userinfobot)
+3. Add the Bot Token and Chat ID to Secrets
 
-## 🚀 使用方法
+## 🚀 How to Use
 
-### 方法 1：定时自动运行
+### Method 1: Scheduled Automatic Run
 
-工作流默认每小时执行一次（UTC 时间），无需任何操作。Fork 并配置好 Secrets 后即开始自动工作。
+The workflow runs automatically once per hour (UTC) by default. No manual action is required after forking and configuring the Secrets.
 
-如果需要修改频率，可编辑 `.github/workflows/bytenut-renewal.yml`：
+If you want to change the frequency, edit `.github/workflows/bytenut-renewal.yml`:
 
 ```yaml
 schedule:
-  - cron: '0 */1 * * *'  # 每小时执行一次
+  - cron: '0 */1 * * *'  # Run once every hour
 ```
 
-常用 cron 表达式：
-- `0 */1 * * *` - 每小时
-- `0 */2 * * *` - 每 2 小时
-- `0 0,12 * * *` - 每天 0 点和 12 点
+Common cron expressions:
+- `0 */1 * * *` - Every hour
+- `0 */2 * * *` - Every 2 hours
+- `0 0,12 * * *` - Every day at 00:00 and 12:00
 
-### 方法 2：手动触发（GitHub 网页）
+### Method 2: Manual Trigger (GitHub Web UI)
 
-1. 进入仓库的 `Actions` 页面
-2. 选择 `Bytenut 续期` 工作流
-3. 点击 `Run workflow`
-4. 点击绿色的 `Run workflow` 按钮
+1. Go to the repository `Actions` page
+2. Select the `Bytenut Renewal` workflow
+3. Click `Run workflow`
+4. Click the green `Run workflow` button
 
-### 方法 3：API 调用
+### Method 3: API Call
 
 ```bash
 curl -X POST \
   -H "Authorization: Bearer ghp_XXXXXXXXXXXXXXXXXXXXXXXXX" \
   -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/你的用户名/你的仓库名/actions/workflows/bytenut-renewal.yml/dispatches \
+  https://api.github.com/repos/your-username/your-repo-name/actions/workflows/bytenut-renewal.yml/dispatches \
   -d '{"ref":"main"}'
 ```
 
-## 🐛 常见问题
+## 🐛 Common Issues
 
-### 1. 登录失败
+### 1. Login Failed
 
-**原因**：
-- 账号密码错误
-- Turnstile 验证失败
-- 网络问题
+**Possible reasons**:
+- Incorrect username/password
+- Turnstile verification failed
+- Network issue
 
-**解决**：
-- 检查 `BYTENUT` Secret 格式是否正确
-- 查看 Actions 日志中的截图（在 Artifacts 中）
-- 尝试配置代理（`PROXY_NODE`）
+**Solutions**:
+- Check whether the `BYTENUT` Secret format is correct
+- Review screenshots from the Actions log (available in Artifacts)
+- Try configuring a proxy (`PROXY_NODE`)
 
-### 2. 续期失败
+### 2. Renewal Failed
 
-**原因**：
-- 处于续期冷却期
-- Turnstile 验证未通过
-- 服务器已过期且无法操作
+**Possible reasons**:
+- The server is in the renewal cooldown period
+- Turnstile verification did not pass
+- The server is expired and cannot be processed
 
-**解决**：
-- 脚本会自动在下次运行时重试
-- 检查截图确认具体原因
-- 手动登录网站查看服务器状态
+**Solutions**:
+- The script will retry automatically on the next run
+- Check the screenshots to confirm the exact reason
+- Log in to the website manually to verify server status
 
-### 3. Telegram 通知未收到
+### 3. Telegram Notifications Not Received
 
-**原因**：
-- Bot Token 或 Chat ID 错误
-- Bot 未启动对话
+**Possible reasons**:
+- Bot Token or Chat ID is incorrect
+- The bot has not been started in chat
 
-**解决**：
-- 在 Telegram 中向 Bot 发送 `/start`
-- 验证 Secret 配置是否正确
-- 检查 Actions 日志中的错误信息
+**Solutions**:
+- Send `/start` to the bot in Telegram
+- Verify the Secret configuration
+- Check the Actions log for error messages
 
-### 4. 代理连接失败
+### 4. Proxy Connection Failed
 
-**原因**：
-- `PROXY_NODE` 格式错误
-- 代理服务器不可用
-- 不支持的协议
+**Possible reasons**:
+- `PROXY_NODE` format is incorrect
+- Proxy server is unavailable
+- Unsupported protocol
 
-**解决**：
-- 验证代理链接是否符合规范
-- 测试代理服务器连通性
-- 留空 `PROXY_NODE` 则使用直连模式
+**Solutions**:
+- Verify that the proxy URL matches the required format
+- Test the connectivity of the proxy server
+- Leave `PROXY_NODE` empty to use direct mode
 
-### 5. 截图在哪里查看？
+### 5. Where to View Screenshots?
 
-在 Actions 运行完成后，向下滚动找到 `Artifacts` 区域，下载 `screenshots` 压缩包即可查看所有截图。
+After the workflow run completes, scroll down to the `Artifacts` section and download the `screenshots` archive to view all captured screenshots.
 
-## 📋 服务器状态与处理逻辑
+## 📋 Server Status and Processing Logic
 
-| 状态 | 条件 | 操作 |
-|------|------|------|
-| `running` 且可续期 | 无冷却，未过期 | ✅ 续期 |
-| `running` 且冷却中 | 冷却期内 | ⏭️ 跳过，等待下次运行 |
-| `offline` 且可续期 | 无冷却 | ✅ 续期并开机 |
-| `offline` 且冷却中 | 冷却期，未过期 | ✅ 仅开机 |
-| `offline` 且已过期 | 已过期且冷却中 | 🚫 跳过，推送提醒 |
-| 任意状态已过期 | 可续期 | ✅ 续期 |
+| Status | Condition | Action |
+|--------|-----------|--------|
+| `running` and renewable | No cooldown, not expired | ✅ Renew |
+| `running` and in cooldown | Cooling down | ⏭️ Skip and wait for next run |
+| `offline` and renewable | No cooldown | ✅ Renew and power on |
+| `offline` and in cooldown | Cooling down, not expired | ✅ Power on only |
+| `offline` and expired | Expired and cooling down | 🚫 Skip and send alert |
+| Any state is expired | Renewable | ✅ Renew |
 
-## 🔒 安全建议
+## 🔒 Security Recommendations
 
-1. ✅ **使用 GitHub Secrets** 存储敏感信息
-2. ✅ **定期更新密码** 并同步到 Secrets
-3. ✅ **限制 GitHub Token 权限**（仅 `repo` 和 `workflow`）
-4. ✅ **开启仓库私有** 防止信息泄露（可选）
-5. ✅ **定期检查 Actions 运行日志**
+1. ✅ Use GitHub Secrets to store sensitive information
+2. ✅ Regularly update passwords and sync them to Secrets
+3. ✅ Restrict GitHub Token permissions (only `repo` and `workflow`)
+4. ✅ Enable private repository mode to prevent information leakage (optional)
+5. ✅ Review Actions logs regularly
 
-## 📄 许可证
+## 📄 License
 
 MIT License
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
 ---
 
-**⚠️ 免责声明**：本脚本仅供学习交流使用，使用者需遵守 ByteNut 的服务条款。因使用本脚本造成的任何问题，作者不承担任何责任。
+**⚠️ Disclaimer**: This script is intended for educational and learning purposes only. Users must comply with ByteNut's terms of service. The author assumes no responsibility for any problems caused by using this script.
